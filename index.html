@@ -1,67 +1,164 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>rectangles.html</title>
-<script type="text/javascript">
-
-
-var	nRectangles = 3,
-	containerWidth = 600,
-	containerHeight = 600,
-	minRectDim = 50,
-	maxRectDim = 100;
-
-/*
-Specifications:
-
-	- The above pseudo-constant values may vary. However, it is guaranteed that:
-
-		a) containerWidth >= (nRectangles x maxRectDim)
-			and
-		b) containerHeight >= (nRectangles x maxRectDim)
-
-		so that the "on load" processing below is always possible.
-
-	- The action takes place in a (containerWidth x containerHeight) container random-color div with top-left border at 0,0 screen (window) coordinates.
-
-	- On load, nRectangles random-sized (each side minRectDim to maxRectDim pixels included) and random-color rectangles are displayed according to the following rules:
-	
-		a) They must not overlap each other
-		b) They must be fully contained within the container div
-		c) Their position is random, given the above two constraints
-
-		The mouse cursor position at load is ignored.
-
-	- Each time a mouse cursor is positioned over a rectangle, it must change color to a new random color.
-
-	- If the cursor remains over a rectangle for 3 seconds, the rectangle is re-positioned (no animation) in such a way that:
-
-		a) It is no longer under the mouse cursor position
-		b) It is still fully visible within the container div
-		c) It does not overlap with the other rectangles
-
-			Should these be impossible, the rectangle is permanently removed
-
-		d) The new position is random, given the above three constraints
-
-
-Further notes:
-
-	- You may use a framework, yet raw DOM would be appreciated.
-
-	- Focus on clean and readable/understandable code before focusing on performance.
-
-	- Once done, we will ask to expose /viva voice/ the way you have proceeded to write the program.
-*/
-
-/* Please write your JavaScript code here */
-
-</script>
-<!-- If using a framework, please insert <script src> here -->
+    <title>rectangles.html</title>
+    <script type="text/javascript">
+        var	nRectangles = 11,
+                containerWidth = 600,
+                containerHeight = 600,
+                minRectDim = 5,
+                maxRectDim = 30;
+        var rectanglesList = [];
+        var numberOfChance = 100;
+        var Rectangle = function(x, y, width, height, parent, id){
+            this.id = id;
+            this.x = x;
+            this.y = y;
+            this.width = width;
+            this.height = height;
+            this.color = generateRandomColor();
+            this.parent = parent;
+        };
+        function drawGlobalContainer(){
+            //- The action takes place in a (containerWidth x containerHeight) container random-color div with top-left border at 0,0 screen (window) coordinates.
+            var mainContainer = new Rectangle(0, 0, containerWidth, containerHeight, document.body, 'mainContainer');
+            var div = document.createElement('div');
+            div.id = mainContainer.id;
+            div.setAttribute('style',
+                    'width: ' + mainContainer.width +'px; ' +
+                    'height: '+ mainContainer.height + 'px; ' +
+                    'position: absolute; ' +
+                    'top: ' + mainContainer.y +'px; ' +
+                    'left: ' + mainContainer.x + 'px; ' +
+                    'background-color: ' + mainContainer.color +';'
+            );
+            mainContainer.parent.appendChild(div);
+        }
+        function createRectangle(x, y, width, height, id){
+            var mainContainer = document.getElementById( 'mainContainer' );
+            //add to OOJS
+            var rectangleObj = new Rectangle(x, y, width, height, mainContainer, id);
+            rectanglesList.push(rectangleObj);
+            return rectangleObj;
+        }
+        function drawRectangle(rectangle){
+            //add to DOM
+            var canvasRectangle = document.createElement('canvas');
+            var ctx = canvasRectangle.getContext('2d');
+            ctx.canvas.id = rectangle.id;
+            ctx.canvas.width = rectangle.width;
+            ctx.canvas.height = rectangle.height;
+            ctx.canvas.setAttribute('style',
+                    'position: absolute; ' +
+                    'top: ' + rectangle.y +'px; ' +
+                    'left: ' + rectangle.x + 'px; ' +
+                    'background-color: ' + rectangle.color +';'
+            );
+            rectangle.parent.appendChild(canvasRectangle);
+        }
+        /*- The above pseudo-constant values may vary. However, it is guaranteed that:
+         a) containerWidth >= (nRectangles x maxRectDim)
+         and
+         b) containerHeight >= (nRectangles x maxRectDim)
+         so that the "on load" processing below is always possible.
+         */
+        function drawRectangles(){
+            drawGlobalContainer();
+            // - On load, nRectangles random-sized (each side minRectDim to maxRectDim pixels included) and random-color rectangles are displayed
+            for(var i=0; i<nRectangles; i++){
+                if(containerWidth >= nRectangles * maxRectDim && containerHeight >= nRectangles * maxRectDim){
+                    var randomWidth = generateRandomNumberFromRange(maxRectDim, minRectDim);
+                    var randomHeight = generateRandomNumberFromRange(maxRectDim, minRectDim);
+                    var freePosition = findCorrectPlace(randomWidth, randomHeight);
+                    var newRectangle = createRectangle(freePosition.x, freePosition.y, randomWidth, randomHeight, i);
+                    drawRectangle(newRectangle);
+                }
+                else console.log('please change global params. recantagle is not drawn')
+            }
+            rectanglesList.forEach(function (rectangle) {
+                setMouseOverEventForRectangle(rectangle);
+            });
+        }
+        function generateRandomColor(){
+            return '#' +  generateRandomNumberFromRange(0xFFFFFF).toString(16);
+        }
+        function findCorrectPlace(w2, h2){
+            var i = 0;
+            while(i < numberOfChance) {
+                var isCorrectPlace = true;
+                // c) Their position is random, given the below two constraints
+                var x2 = generateRandomNumberFromRange(containerWidth);
+                var y2 = generateRandomNumberFromRange(containerHeight);
+                i++;
+                // b) They must be fully contained within the container div
+                if (!(x2 + w2 < containerWidth && y2 + h2 < containerHeight)) { //check fully contained position
+                    isCorrectPlace = false;
+                    continue;
+                }
+                // a) They must not overlap each other
+                rectanglesList.forEach(function (rectangle) {
+                    if (rectangle.x < x2 + w2 &&
+                            rectangle.x + rectangle.width > x2 &&
+                            rectangle.y < y2 + h2 &&
+                            rectangle.height + rectangle.y > y2) {
+                        isCorrectPlace = false;
+                    }
+                })
+                if (isCorrectPlace) {
+                    console.log('Find correct place in the change ' + i);
+                    break;
+                }
+            };
+            return {
+                x: x2,
+                y: y2
+            }
+        }
+        function generateRandomNumberFromRange(max, min){
+            min = min || 0;
+            return Math.floor(Math.random()* (max+1)) + min; //plus 1, because of randing errors
+        }
+        function setMouseOverEventForRectangle(rectangle) {
+            var selectedRectangle = document.getElementById(rectangle.id);
+            if(!!selectedRectangle) {
+                var onMouseOverEventHandler;
+                selectedRectangle.addEventListener('mouseover', function (mouseEvent) {
+                    // - Each time a mouse cursor is positioned over a rectangle, it must change color to a new random color.
+                    selectedRectangle.style.backgroundColor = rectangle.color = generateRandomColor();
+                    //  - If the cursor remains over a rectangle for 3 seconds, the rectangle is re-positioned (no animation) in such a way that:
+                    onMouseOverEventHandler = setTimeout(function () {
+                        while (1) {
+                            //c) It does not overlap with the other rectangles
+                            var freePosition = findCorrectPlace(rectangle.width, rectangle.height);
+                            //a) It is no longer under the mouse cursor position
+                            if (freePosition.x !== mouseEvent.x && freePosition.y !== mouseEvent.y)
+                                break;
+                        }
+                        /*
+                         Should these be impossible, the rectangle is permanently removed
+                         d) The new position is random
+                         */
+                        rectangle.x = freePosition.x;
+                        rectangle.y = freePosition.y;
+                        //b) It is still fully visible within the container div
+                        selectedRectangle.setAttribute('style',
+                                'position: absolute; ' +
+                                'top: ' + rectangle.y + 'px; ' +
+                                'left: ' + rectangle.x + 'px; ' +
+                                'background-color: ' + rectangle.color + ';'
+                        );
+                    }, 3000);
+                });
+                selectedRectangle.addEventListener('mouseleave', function () {
+                    clearTimeout(onMouseOverEventHandler);
+                });
+            }
+        }
+    </script>
+    <!-- If using a framework, please insert <script src> here -->
 </head>
-<body><!-- 
-
+<body onload="drawRectangles();"><!--
 	No HTML here! Everything must be written in JavaScript.
-	
+
 --></body>
 </html>
